@@ -95,14 +95,54 @@ convert_8_to_rank:
 
     bx lr
 
+convert_to_rank_stack:
+    cmp r5, #40 @is open parenthesis 
+    moveq r5,#8
+    cmp r5, #41 @is close parenthesis
+    moveq r5,#1
+    cmp r5, #42 @is mult
+    moveq r5,#4
+    cmp r5, #43 @is add
+    moveq r5,#5
+    cmp r5, #45 @is minus
+    moveq r5,#5
+    cmp r5, #47 @is division
+    moveq r5,#4
+    cmp r5, #94 @is exp
+    moveq r5,#3
+    cmp r5, #8
+    moveq r5,#0
+
+    bx lr
+
+convert_8_to_rank_stack:
+    cmp r8, #40 @is open parenthesis 
+    moveq r0,#8
+    cmp r8, #41 @is close parenthesis
+    moveq r0,#1
+    cmp r8, #42 @is mult
+    moveq r0,#4
+    cmp r8, #43 @is add
+    moveq r0,#5
+    cmp r8, #45 @is minus
+    moveq r0,#5
+    cmp r8, #47 @is division
+    moveq r0,#4
+    cmp r8, #94 @is exp
+    moveq r0,#3
+    cmp r8, #8
+    moveq r0,#0
+
+    bx lr
+
 
 pop_and_insert:
     cmp r5,#0
     moveq r5,#8
-    streq r5, [sp, #-4]!
+    streq r4, [sp, #-4]!
     beq postfix_conversion
 
-    str r5,[r10,r2]
+    str r4,[r10,r2]
     add r2,#1
     sub r6,#1
     b cont_pop
@@ -111,12 +151,13 @@ cont_pop:
     cmp r6,#0
     moveq r5,r8
     beq swap_open_par_2
-    ldr r5, [sp], #4
-    cmp r8,r5
+    ldr r4, [sp], #4
+    mov r5, r4
+    bl convert_to_rank
+    cmp r0,r5
     bge pop_and_insert
-    str r5, [sp, #-4]!
-    mov r5,r8
-    str r5, [sp, #-4]!
+    str r4, [sp, #-4]!
+    str r8, [sp, #-4]!
     b postfix_conversion
 
 cont_pop_par:
