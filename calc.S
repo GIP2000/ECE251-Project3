@@ -70,8 +70,6 @@ convert_to_rank:
     moveq r5,#4
     cmp r5, #94 @is exp
     moveq r5,#3
-    cmp r5, #8
-    moveq r5,#0
 
     bx lr
 
@@ -90,8 +88,6 @@ convert_8_to_rank:
     moveq r0,#4
     cmp r8, #94 @is exp
     moveq r0,#3
-    cmp r8, #8
-    moveq r0,#0
 
     bx lr
 
@@ -110,8 +106,6 @@ convert_to_rank_stack:
     moveq r5,#4
     cmp r5, #94 @is exp
     moveq r5,#3
-    cmp r5, #8
-    moveq r5,#0
 
     bx lr
 
@@ -130,15 +124,10 @@ convert_8_to_rank_stack:
     moveq r0,#4
     cmp r8, #94 @is exp
     moveq r0,#3
-    cmp r8, #8
-    moveq r0,#0
-
     bx lr
 
-
 pop_and_insert:
-    cmp r5,#0
-    moveq r5,#8
+    cmp r5,#8 
     streq r4, [sp, #-4]!
     beq postfix_conversion
 
@@ -149,46 +138,35 @@ pop_and_insert:
 
 cont_pop:
     cmp r6,#0
-    moveq r5,r8
-    beq swap_open_par_2
+    streq r8, [sp, #-4]!
+    addeq r6,#1
+    beq postfix_conversion
     ldr r4, [sp], #4
     mov r5, r4
-    bl convert_to_rank
+    bl convert_to_rank_stack
     cmp r0,r5
     bge pop_and_insert
     str r4, [sp, #-4]!
     str r8, [sp, #-4]!
+    add r6,#1
     b postfix_conversion
 
 cont_pop_par:
     ldr r5, [sp], #4
     mov r4, r5
     sub r6,#1
-    bl convert_to_rank
+    bl convert_to_rank_stack
     cmp r5,#8
     beq postfix_conversion
     str r4,[r10,r2]
     add r2,#1
     b cont_pop_par
 
-swap_open_par_2:
-    cmp r5,#1
-    moveq r5,#8
-    str r5, [sp, #-4]!
-    add r6,#1
-    b postfix_conversion 
 
-swap_open_par_3:
-    cmp r5,#1
-    moveq r5,#8
-    str r4, [sp, #-4]! @ pusheq{r5}
-    add r6,#1
-    b postfix_conversion
-
-swap_open_par:
-    cmp r5,#1
-    moveq r5,#8
-    bx lr 
+@ swap_open_par:
+@     cmp r5,#1
+@     moveq r5,#8
+@     bx lr 
 
 stack_manager:
     cmp r1, #0
@@ -199,21 +177,23 @@ stack_manager:
     mov r5, r4
     bl convert_to_rank
     
-    cmp r5,#2
+    cmp r5,#1 @2
     beq cont_pop_par    
     cmp r6,#0
-    beq swap_open_par_3
+    streq r4, [sp, #-4]!
+    addeq r6,#1
+    beq postfix_conversion
     
     mov r8, r4
     ldr r4, [sp], #4 @ pop {r5}
     mov r5, r4
-    bl convert_to_rank
+    bl convert_to_rank_stack
     bl convert_8_to_rank
     cmp r0,r5
     str r4, [sp, #-4]! @ push{r5}
     bge cont_pop
     mov r5,r8
-    bl swap_open_par
+    @ bl swap_open_par
     str r5, [sp, #-4]! @ push{r5}
     add r6,#1
     
@@ -272,7 +252,6 @@ stack_number_inner:
     add r2, #1
     b stack_number
     @ convert to float
-    @ streq r10, [sp, #-4]! @ push if a "_"
 
 
 convert_to_float:
