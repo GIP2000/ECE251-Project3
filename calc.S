@@ -10,9 +10,6 @@ printPattern: .asciz "%s\n"
 printPatternC: .asciz "%c\n"
 
 .balign 4
-printTestString: .asciz "I ran \n"
-
-.balign 4
 scanPattern: .asciz "%lf"
 
 .balign 4
@@ -36,8 +33,10 @@ floatNumber: .space 20
 .text 
 .global main
 main:
-    ldr r0,=return
-    str lr,[r0]
+    ldr r3,=return
+    str lr,[r3]
+    cmp r0, #1
+    ble throw_consecutive_operation_error
     ldr r1,[r1, #4] @grabs the command line arg
     ldr r2,=initalStr
     str r1,[r2]
@@ -106,7 +105,7 @@ check_valid_eqaution_inner:
     blt throw_consecutive_operation_error
 
     cmp r6, #4
-    bge throw_consecutive_operation_error
+    bgt throw_consecutive_operation_error
 
     cmp r0, #1
     movne r8, #0
@@ -119,6 +118,9 @@ throw_consecutive_operation_error:
     b full_exit
 
 reset_increment:
+    cmp r3, #1
+    beq throw_consecutive_operation_error
+
     cmp r5, #0
     bne throw_consecutive_operation_error
 
@@ -321,10 +323,7 @@ end_converstion_loop:
     sub r6,#1
     b end_converstion_loop
 
-calculate: 
-    ldr r1,=postfixStr
-    ldr r0,=printPattern
-    bl printf
+calculate:
     ldr r9,=numberString
     mov r2, #0
 
@@ -339,7 +338,6 @@ stack_number_inner:
     str r4,[r9, r2]
     add r2, #1
     b stack_number
-    @ convert to float
 
 convert_to_float:
     ldr r0,=numberString
