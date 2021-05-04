@@ -17,6 +17,9 @@ scanPattern: .asciz "%lf"
 .balign 4
 printFloatPattern: .asciz "value = %lf\n"
 
+.balign 4
+invalidInputStr: .asciz "Invalid Input\n"
+
 .balign 4 
 numberString: .skip 250
 
@@ -28,12 +31,6 @@ initalStr: .word 250
 
 .balign 4
 floatNumber: .space 20
-
-.balign 4
-floatZero: .float 0.0
-
-.balign 4
-floatOne: .float 1.0
 
 
 
@@ -47,13 +44,111 @@ main:
     str r1,[r2]
     mov r2,#0 @ counter through string
     ldr r10,=postfixStr @ new string
-    mov r5,#0 @ what type of operation it is 
-    mov r6,#0 @ length of stack 
-    ldr r9,=initalStr
+    ldr r9, =initalStr
     ldr r9,[r9]
-    mov r3,#95 @stores an underscore
     mov r1,#0 @ flag 0 if last thing was an number; 1 if last thing was operator 
-    b postfix_conversion
+    mov r8, #0
+    mov r3, #1
+    mov r5, #0 @ open/close parenthesis counter
+    mov r6, #0 @ operator counter
+
+check_valid_equation:
+    ldrb r4,[r9],#1
+    
+check_valid_eqaution_inner:
+    mov r0, #0
+
+    add r2, #1
+
+    cmp r4, #0x00
+    beq reset_increment
+    
+
+    cmp r4, #43 @is add
+    addeq r8,#1
+    addeq r6,#1
+    moveq r0, #1
+
+    cmp r4, #42 @is mult
+    addeq r8,#1
+    addeq r6,#1
+
+    moveq r0, #1
+    
+    cmp r4, #45 @is minus
+    addeq r8,#1
+    addeq r6,#1
+    moveq r0, #1
+    
+    cmp r4, #47 @is division
+    addeq r8,#1
+    addeq r6,#1
+    moveq r0, #1
+    
+    cmp r4, #94 @is exp
+    addeq r8,#1
+    addeq r6,#1
+    moveq r0, #1
+
+    cmp r4, #41 @is close
+    subeq r5, #1
+    cmpeq r8, #1
+    beq throw_consecutive_operation_error
+    
+    cmp r4, #40 @is open
+    addeq r5, #1
+    beq check_open_parenthesis
+    
+    cmp r3, r8
+    addne r3, #2
+    beq throw_consecutive_operation_error
+
+    cmp r8, #1
+    bgt throw_consecutive_operation_error
+    
+    cmp r5, #0
+    blt throw_consecutive_operation_error
+
+    cmp r6, #4
+    bge throw_consecutive_operation_error
+
+    cmp r0, #1
+    movne r8, #0
+
+    b check_valid_equation
+
+throw_consecutive_operation_error:
+    ldr r0, =invalidInputStr
+    bl printf
+    b full_exit
+
+reset_increment:
+    cmp r5, #0
+    bne throw_consecutive_operation_error
+    cmp r8, #1
+    bge throw_consecutive_operation_error
+
+reset_increment_inner:
+    cmp r2, #0
+    moveq r3, #95 @stores an underscore
+    moveq r5,#0 @ what type of operation it is 
+    moveq r6,#0 @ length of stack 
+    beq postfix_conversion
+
+    ldrb r4,[r9],#-1
+    sub r2, #1
+    b reset_increment_inner
+
+check_open_parenthesis:
+    ldrb r4,[r9],#1
+    cmp r4, #48
+    blt check_valid_eqaution_inner
+
+check_open_parenthesis_2:
+    cmp r4, #57
+    bgt throw_consecutive_operation_error
+    b check_valid_eqaution_inner
+
 
 convert_to_rank:
     cmp r5, #40 @is open parenthesis 
@@ -162,11 +257,6 @@ cont_pop_par:
     add r2,#1
     b cont_pop_par
 
-
-@ swap_open_par:
-@     cmp r5,#1
-@     moveq r5,#8
-@     bx lr 
 
 stack_manager:
     cmp r1, #0
@@ -329,9 +419,12 @@ exit:
     ldr r0,=printFloatPattern
     bl printf
 
+full_exit:
     ldr lr,=return
     ldr lr,[lr]
     bx lr
+
+
 
 .global printf
 .global sscanf
