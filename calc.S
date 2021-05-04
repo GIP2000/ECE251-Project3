@@ -14,6 +14,7 @@ printTestString: .asciz "I ran \n"
 
 .balign 4
 scanPattern: .asciz "%lf"
+
 .balign 4
 printFloatPattern: .asciz "value = %lf\n"
 
@@ -31,8 +32,6 @@ initalStr: .word 250
 
 .balign 4
 floatNumber: .space 20
-
-
 
 .text 
 .global main
@@ -57,13 +56,11 @@ check_valid_equation:
     
 check_valid_eqaution_inner:
     mov r0, #0
-
     add r2, #1
 
     cmp r4, #0x00
     beq reset_increment
     
-
     cmp r4, #43 @is add
     addeq r8,#1
     addeq r6,#1
@@ -72,7 +69,6 @@ check_valid_eqaution_inner:
     cmp r4, #42 @is mult
     addeq r8,#1
     addeq r6,#1
-
     moveq r0, #1
     
     cmp r4, #45 @is minus
@@ -125,6 +121,7 @@ throw_consecutive_operation_error:
 reset_increment:
     cmp r5, #0
     bne throw_consecutive_operation_error
+
     cmp r8, #1
     bge throw_consecutive_operation_error
 
@@ -148,7 +145,6 @@ check_open_parenthesis_2:
     cmp r4, #57
     bgt throw_consecutive_operation_error
     b check_valid_eqaution_inner
-
 
 convert_to_rank:
     cmp r5, #40 @is open parenthesis 
@@ -219,6 +215,7 @@ convert_8_to_rank_stack:
     moveq r0,#4
     cmp r8, #94 @is exp
     moveq r0,#3
+
     bx lr
 
 pop_and_insert:
@@ -256,7 +253,6 @@ cont_pop_par:
     str r4,[r10,r2]
     add r2,#1
     b cont_pop_par
-
 
 stack_manager:
     cmp r1, #0
@@ -314,6 +310,7 @@ end_conversion:
     cmp r1,#0
     streq r3,[r10,r2]
     addeq r2,#1
+
 end_converstion_loop:
     cmp r6,#0
     beq calculate
@@ -335,6 +332,7 @@ stack_number: @ stack until operator is found
     ldrb r4,[r10],#1
     cmp r4, #0x00 @ branch if not at end of string
     beq exit
+
 stack_number_inner:
     cmp r4, #95    
     beq convert_to_float
@@ -343,9 +341,7 @@ stack_number_inner:
     b stack_number
     @ convert to float
 
-
 convert_to_float:
-
     ldr r0,=numberString
     ldr r1,=scanPattern
     ldr r2,=floatNumber
@@ -357,12 +353,9 @@ convert_to_float:
     mov r2,#0
 
 check_if_next_is_op:
-    
     ldrb r4,[r10],#1
     cmp r4, #0x00
-    beq exit
-    @ b apply_operator@ if not operator go back to stack_number
-    
+    beq exit    
 
 apply_operator:
     cmp r4,#93
@@ -388,16 +381,19 @@ multiply:
     vmul.f64 d0, d0,d1
     vpush {d0}
     b check_if_next_is_op
+
 addition:
     bl get_top_two
     vadd.f64 d0,d0,d1
     vpush {d0}
     b check_if_next_is_op
+
 subtraction:
     bl get_top_two
     vsub.f64 d0,d1,d0
     vpush.f64 {d0}
     b check_if_next_is_op
+
 division:
     bl get_top_two
     vdiv.f64 d0,d1,d0
@@ -423,8 +419,6 @@ full_exit:
     ldr lr,=return
     ldr lr,[lr]
     bx lr
-
-
 
 .global printf
 .global sscanf
