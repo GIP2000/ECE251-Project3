@@ -28,6 +28,12 @@ postfixStr: .skip 250
 initalStr: .word 250
 
 .balign 4
+processNegativeString: .skip 250
+
+.balign 4
+processNegativeStringAddr: .skip 250
+
+.balign 4
 floatNumber: .space 20
 
 .text 
@@ -41,7 +47,7 @@ main:
     ldr r2,=initalStr
     str r1,[r2]
     mov r2,#0 @ counter through string
-    ldr r10,=postfixStr @ new string
+    ldr r10,=processNegativeString 
     ldr r9, =initalStr
     ldr r9,[r9]
     mov r1,#0 @ flag 0 if last thing was an number; 1 if last thing was operator 
@@ -55,9 +61,10 @@ check_valid_equation:
     
 check_valid_eqaution_inner:
     mov r0, #0
-    add r2, #1
+    @ add r2, #1
 
     cmp r4, #0x00
+    addeq r2, #1
     beq reset_increment
     
     cmp r4, #43 @is add
@@ -69,11 +76,18 @@ check_valid_eqaution_inner:
     addeq r8,#1
     addeq r6,#1
     moveq r0, #1
+
+    cmp r4, #40 @is open
+    addeq r5, #1
+    streq r4,[r10,r2]
+    addeq r2,#1
+    beq check_open_parenthesis
     
     cmp r4, #45 @is minus
-    addeq r8,#1
-    addeq r6,#1
-    moveq r0, #1
+    bleq handle_minus
+    @ addeq r8,#1
+    @ addeq r6,#1
+    @ moveq r0,#1
     
     cmp r4, #47 @is division
     addeq r8,#1
@@ -90,10 +104,6 @@ check_valid_eqaution_inner:
     cmpeq r8, #1
     beq throw_consecutive_operation_error
     
-    cmp r4, #40 @is open
-    addeq r5, #1
-    beq check_open_parenthesis
-    
     cmp r3, r8
     addne r3, #2
     beq throw_consecutive_operation_error
@@ -109,6 +119,9 @@ check_valid_eqaution_inner:
 
     cmp r0, #1
     movne r8, #0
+
+    str r4,[r10,r2]
+    add r2,#1
 
     b check_valid_equation
 
@@ -129,9 +142,16 @@ reset_increment:
 
 reset_increment_inner:
     cmp r2, #0
+    ldreq r9,=processNegativeString
+    ldreq r3,=processNegativeStringAddr
+    addeq r9,#4
+    streq r9, [r3]
+    ldreq r9,=processNegativeString
+    ldreq r9,[r9]
     moveq r3, #95 @stores an underscore
     moveq r5,#0 @ what type of operation it is 
     moveq r6,#0 @ length of stack 
+    ldreq r10,=postfixStr @ new string
     beq postfix_conversion
 
     ldrb r4,[r9],#-1
@@ -146,6 +166,27 @@ check_open_parenthesis:
 check_open_parenthesis_2:
     cmp r4, #57
     bgt throw_consecutive_operation_error
+    b check_valid_eqaution_inner
+
+
+handle_minus:
+    cmp r8,#1
+    addlt r8, #1
+    addlt r6, #1
+    movlt r0, #1
+    movge r4, #32
+    cmp r3, r8
+    subeq r8,#1
+    subeq r6, #1
+    moveq r0,#0
+    moveq r4,#32
+
+    str r4,[r10,r2]
+    add r2,#1
+    ldrb r4,[r9],#1
+    cmp r4,#40
+    beq throw_consecutive_operation_error
+
     b check_valid_eqaution_inner
 
 convert_to_rank:
@@ -256,6 +297,22 @@ cont_pop_par:
     add r2,#1
     b cont_pop_par
 
+check_true_end:
+    push {r3}
+    ldr r9,=processNegativeStringAddr
+    ldr r9,[r9]
+    add r9,#4
+    ldr r3,=processNegativeStringAddr
+    str r9,[r3]
+    sub r9, #4
+    pop {r3}
+    ldr r9,[r9]
+    cmp r9, #0x00
+    beq end_conversion
+    and r4,r9,#0xFF
+    mov r9, r9, LSR #8
+    b mid_postfix_conversion
+
 stack_manager:
     cmp r1, #0
     streq r3,[r10,r2]
@@ -286,9 +343,16 @@ stack_manager:
     add r6,#1
     
 postfix_conversion:
-    ldrb r4,[r9],#1
+    @ ldrb r4,[r9],#1
+    and r4,r9,#0xFF
+    mov r9, r9, LSR #8
     cmp r4, #0x00
-    beq end_conversion
+    beq check_true_end
+    @ ldreq r9,=processNegativeString
+    @ addeq r9,#4
+    @ ldreq r9,[r9]
+    @ beq end_conversion
+mid_postfix_conversion:
     cmp r4, #40 @is open parenthesis 
     beq stack_manager
     cmp r4, #41 @is close parenthesis
@@ -324,8 +388,12 @@ end_converstion_loop:
     b end_converstion_loop
 
 calculate:
+    ldr r0,=printPattern
+    ldr r1,=postfixStr
+    bl printf 
     ldr r9,=numberString
     mov r2, #0
+    mov r5, #0
 
 stack_number: @ stack until operator is found
     ldrb r4,[r10],#1
@@ -335,11 +403,17 @@ stack_number: @ stack until operator is found
 stack_number_inner:
     cmp r4, #95    
     beq convert_to_float
+    cmp r4, #32
+    moveq r4,#45
+    addeq r5, #1
+    cmp r5, #2
+    beq throw_consecutive_operation_error
     str r4,[r9, r2]
     add r2, #1
     b stack_number
 
 convert_to_float:
+    mov r5, #0
     ldr r0,=numberString
     ldr r1,=scanPattern
     ldr r2,=floatNumber
