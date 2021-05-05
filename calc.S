@@ -59,7 +59,7 @@ main:
 check_valid_equation:
     ldrb r4,[r9],#1
     
-check_valid_eqaution_inner:
+check_valid_equation_inner:
     mov r0, #0
     @ add r2, #1
 
@@ -161,12 +161,12 @@ reset_increment_inner:
 check_open_parenthesis:
     ldrb r4,[r9],#1
     cmp r4, #48
-    blt check_valid_eqaution_inner
+    blt check_valid_equation_inner
 
 check_open_parenthesis_2:
     cmp r4, #57
     bgt throw_consecutive_operation_error
-    b check_valid_eqaution_inner
+    b check_valid_equation_inner
 
 
 handle_minus:
@@ -183,11 +183,16 @@ handle_minus:
 
     str r4,[r10,r2]
     add r2,#1
+    cmp r4, #32
+    beq check_if_next_open_minus
+
+    b check_valid_equation
+
+check_if_next_open_minus:
     ldrb r4,[r9],#1
     cmp r4,#40
     beq throw_consecutive_operation_error
-
-    b check_valid_eqaution_inner
+    b check_valid_equation_inner
 
 convert_to_rank:
     cmp r5, #40 @is open parenthesis 
