@@ -61,7 +61,6 @@ check_valid_equation:
     
 check_valid_equation_inner:
     mov r0, #0
-    @ add r2, #1
 
     cmp r4, #0x00
     addeq r2, #1
@@ -85,9 +84,6 @@ check_valid_equation_inner:
     
     cmp r4, #45 @is minus
     bleq handle_minus
-    @ addeq r8,#1
-    @ addeq r6,#1
-    @ moveq r0,#1
     
     cmp r4, #47 @is division
     addeq r8,#1
@@ -167,7 +163,6 @@ check_open_parenthesis_2:
     cmp r4, #57
     bgt throw_consecutive_operation_error
     b check_valid_equation_inner
-
 
 handle_minus:
     cmp r8,#1
@@ -348,15 +343,11 @@ stack_manager:
     add r6,#1
     
 postfix_conversion:
-    @ ldrb r4,[r9],#1
     and r4,r9,#0xFF
     mov r9, r9, LSR #8
     cmp r4, #0x00
     beq check_true_end
-    @ ldreq r9,=processNegativeString
-    @ addeq r9,#4
-    @ ldreq r9,[r9]
-    @ beq end_conversion
+   
 mid_postfix_conversion:
     cmp r4, #40 @is open parenthesis 
     beq stack_manager
